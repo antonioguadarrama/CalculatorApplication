@@ -6,6 +6,9 @@
 package calculatorapplication;
 
 import java.util.*;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptEngine;
+import javax.script.ScriptException;
 
 /**
  *
@@ -16,12 +19,12 @@ public class CalculatorApplication {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ScriptException {
         // TODO code application logic here
         CalculatorApplication.run();
     }
 
-    private static void run() {
+    private static void run() throws ScriptException {
         // variables
         Scanner kb = new Scanner(System.in);
         boolean run = true;
@@ -60,7 +63,74 @@ public class CalculatorApplication {
         } else if(userInput.length() > 50) {
             System.out.println("Error: Input too long\n");
             return false;
+        } else if(userInput.length() < 3) {
+            System.out.println("Error: Input too short\n");
+            return false;
         } else if(checkParenthesis(userInput) == false) {
+            return false;
+        } else if(checkSymbols(userInput) == false) {
+            return false;
+        }
+
+        if(userInput.contains("+") 
+            || userInput.contains("-") 
+            || userInput.contains("*") 
+            || userInput.contains("/")
+            || userInput.contains("^")){
+        } else {
+            System.out.println("Error: Equation not valid");
+            return false;
+        }
+        return true;
+    }
+    
+    public static boolean checkSymbols(String userInput) {
+        if(userInput.contains("++") // doubles
+            || userInput.contains("--")
+            || userInput.contains("**")
+            || userInput.contains("//")
+            || userInput.contains("^^")
+            || userInput.contains("+-") // +_
+            || userInput.contains("+*")
+            || userInput.contains("+/")
+            || userInput.contains("+^")
+            || userInput.contains("--") // -_
+            || userInput.contains("-*")
+            || userInput.contains("-/")
+            || userInput.contains("-^")
+            || userInput.contains("*+") // *_
+            || userInput.contains("*-")
+            || userInput.contains("*/")
+            || userInput.contains("*^")
+            || userInput.contains("/+") // /_
+            || userInput.contains("/-")
+            || userInput.contains("/*")
+            || userInput.contains("/^")
+            || userInput.contains("^+") // ^_
+            || userInput.contains("^-")
+            || userInput.contains("^*")
+            || userInput.contains("^/")
+            || userInput.contains("-+") // _+
+            || userInput.contains("*+")
+            || userInput.contains("/+")
+            || userInput.contains("^+")
+            || userInput.contains("+-") // _-
+            || userInput.contains("*-")
+            || userInput.contains("/-")
+            || userInput.contains("^-")
+            || userInput.contains("+*") // _*
+            || userInput.contains("-*")
+            || userInput.contains("/*")
+            || userInput.contains("^*")
+            || userInput.contains("+/") // _/
+            || userInput.contains("-/")
+            || userInput.contains("*/")
+            || userInput.contains("^/")
+            || userInput.contains("+^") // _^
+            || userInput.contains("-^")
+            || userInput.contains("*^")
+            || userInput.contains("/^")){
+            System.out.println("Error: Invalid input");
             return false;
         }
         return true;
@@ -68,13 +138,7 @@ public class CalculatorApplication {
     
     public static boolean checkParenthesis(String userInput) {
         // variables
-        //StringTokenizer token = new StringTokenizer(userInput, "^*/+-0123456789");
         ArrayList<String> characters = new ArrayList<String>(Arrays.asList(userInput.split("")));
-        
-        // add the tokens into the arraylist
-        //while(token.hasMoreTokens()) {
-        //    characters.add(token.nextToken());
-        //}
         
         int leftParenthesis = 0;
         int rightParenthesis = 0;
@@ -98,28 +162,42 @@ public class CalculatorApplication {
         }   // check if there are the same number of closed parenthesis as open parenthesis
         return true;
     }    
-    public static double computeEquation(String userInput) {
+    public static double computeEquation(String userInput) throws ScriptException {
         double answer = 0.0;
         int startIndex = 0;
         int endIndex = 0;
         String currentEquation = "";
         boolean equationSolved = false;
+        double temp = 0.0;
         
-        userInput = "(" + userInput + ")";
+        userInput = addMultiplication(userInput);
+        System.out.println("--after--" + userInput);
+        //userInput = "(" + userInput + ")";
         
         while(!equationSolved) {
+            if(userInput.contains("+")  ||
+                userInput.contains("*") || userInput.contains("/")) {
+                // continue solving
+            } else {
+                equationSolved = true;
+            }
+            
             ArrayList<String> characters = new ArrayList<String>(Arrays.asList(userInput.split("")));
             startIndex = findStart(characters); // starting index is updated
-            System.out.println("Start index: " + startIndex);
+            //System.out.println("Start index: " + startIndex);
             endIndex = findEnd(characters, startIndex);
-            System.out.println("End index: " + endIndex);
+            //System.out.println("End index: " + endIndex);
             // parse the substring between the start index and end index
-            currentEquation = userInput.substring(endIndex, endIndex);
+            currentEquation = userInput.substring(startIndex, endIndex + 1);
             // then solve
-            solveEquation(currentEquation);
+            temp = solveEquation(currentEquation);
             // update userInput
-            userInput = userInput.substring(0, startIndex) + currentEquation
-                    + userInput.substring(endIndex, userInput.length());
+            //System.out.println("0 to startIndex: " + userInput.substring(0, startIndex));
+            //System.out.println(" temp " + temp);
+            //System.out.println("endIndex to length: " + userInput.substring(endIndex + 1, userInput.length()));
+            userInput = userInput.substring(0, startIndex) + temp
+                    + userInput.substring(endIndex + 1, userInput.length());
+            System.out.println("\n" + userInput);
         }
         return answer;
     }
@@ -151,16 +229,92 @@ public class CalculatorApplication {
                 return i;
             }
         }
-        return characters.size(); // 
+        return characters.size()-1; // 
     }
     
-    public static double solveEquation(String equation) {
+    public static double solveEquation(String equation) throws ScriptException {
         double returnValue = 0.0;
         // remove parenthesis at beginning and end
-        equation = equation.substring(1, equation.length()-1);
+        //equation = equation.substring(1, equation.length()-1);
+        equation.replace("(", "");
+        equation.replace(")", "");
+        System.out.println("equation: " + equation);
         
         
         
+        ScriptEngineManager mgr = new ScriptEngineManager();
+        ScriptEngine engine = mgr.getEngineByName("JavaScript");
+        
+        while(equation.contains("^")) {
+            String base = solveBase(equation, equation.indexOf("^"));
+            double tempBase = Double.parseDouble(base);
+            String power = solvePower(equation, equation.indexOf("^"));
+            double tempPower = Double.parseDouble(power);
+            double result = Math.pow(tempBase, tempPower);
+            String resultString = Double.toString(result);
+            
+            equation = equation.replace(base+"^"+power, resultString);
+        }
+        
+        Object result = (engine.eval(equation));
+        System.out.println(result);
+        returnValue = Double.parseDouble(result.toString());
+        System.out.println("return val: " + returnValue);
         return returnValue;
+    }
+    
+    public static String addMultiplication(String userInput) {
+        userInput = userInput.replace("0(", "0*(");
+        userInput = userInput.replace("1(", "1*(");
+        userInput = userInput.replace("2(", "2*(");
+        userInput = userInput.replace("3(", "3*(");
+        userInput = userInput.replace("4(", "4*(");
+        userInput = userInput.replace("5(", "5*(");
+        userInput = userInput.replace("6(", "6*(");
+        userInput = userInput.replace("7(", "7*(");
+        userInput = userInput.replace("8(", "8*(");
+        userInput = userInput.replace("9(", "9*(");
+        userInput = userInput.replace(")(", ")*(");
+        return userInput;
+    }
+    
+    public static String solveBase(String equation, int endIndex) {
+        int maxIndex = 0;
+        int currentIndex = 0;
+        for(int i = 0; i < endIndex; i++) {
+            if(equation.charAt(endIndex-i) == '+' || 
+               equation.charAt(endIndex-i) == '-' ||
+               equation.charAt(endIndex-i) == '/' ||
+               equation.charAt(endIndex-i) == '*') {
+                currentIndex = endIndex-i;
+                if(currentIndex > maxIndex) {
+                    maxIndex = currentIndex;
+                }
+            }
+        }
+        System.out.println(equation.substring(maxIndex + 1, endIndex));
+        return equation.substring(maxIndex + 1, endIndex);
+    }
+    
+    public static String solvePower(String equation, int startIndex) {
+        int maxIndex = 0;
+        int currentIndex = 0;
+        for(int i = 0; i < equation.length() - startIndex; i++) {
+            if(equation.charAt(startIndex + i) == '+' || 
+               equation.charAt(startIndex + i) == '-' ||
+               equation.charAt(startIndex + i) == '/' ||
+               equation.charAt(startIndex + i) == '*') {
+                currentIndex = startIndex + i;
+                if(currentIndex > maxIndex) {
+                    maxIndex = currentIndex;
+                }
+            }
+            
+        }
+        if(maxIndex == 0) {
+            maxIndex = equation.length();
+        }
+        System.out.println(equation.substring(startIndex + 1, maxIndex));
+        return equation.substring(startIndex + 1, maxIndex);
     }
 }
